@@ -1,36 +1,46 @@
-# This is a basic workflow to help you get started with Actions
-
-name: CI
-
-# Controls when the action will run. 
+---
+name: Application CI Pipeline on Push
+env:
+  CONTAINER_IMAGE: pramanick1984/test1
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [master]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  build-publish-docker:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo This is hello program!
+    - name: Build
+      run: |
+        docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+    - name: Build and tag docker image
+      run: |
+         docker build . -t ${{ env.CONTAINER_IMAGE }}:${GITHUB_SHA::7}
+    - name: Publish docker image to dockerhub
+      run: docker push ${{ env.CONTAINER_IMAGE }}:${GITHUB_SHA::7}
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+    - name: Cloning Receiver Repo
+      run: git clone "https://${{ secrets.ACCESS_TOKEN }}@github.com/deepakjotwani/receiver.git"
+
+    - name: Importing the GPG key
+      run: |
+        echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --import
+      env:
+        GPG_PRIVATE_KEY: ${{secrets.GPG_PRIVATE_KEY_B64}}
+
+    - name: Update tag in Receiver
+      run: |
+            git config --global user.email "pramanick.goutam@gmail.com"
+            git config --global user.name "goutamp"
+            git checkout -b feature/Updating-tag-sample1-ms-${GITHUB_SHA::7}
+            docker run -v $PWD/kustomization.yaml:/app/kustomization.yaml k8s.gcr.io/kustomize/kustomize:v3.8.7 edit set image sample1-image=${{ env.CONTAINER_IMAGE }}:${GITHUB_SHA::7}
+            git diff --exit-code && echo 'Already deployed' || \
+            (git commit -S -am "Upgrade docker tag of sample1-service to ${GITHUB_SHA::7}" \
+            && git push origin feature/Updating-tag-sample1-ms-${GITHUB_SHA::7} \
+            && hub pull-request -m "feat:Updating tag for Sample service" -b master -h feature/Updating-tag-sample1-ms-${GITHUB_SHA::7} )
+      env:
+        GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}      
+      working-directory: receiver/Services/base
