@@ -4,7 +4,7 @@ env:
   CONTAINER_IMAGE: pramanick1984/test1
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 jobs:
   build-publish-docker:
