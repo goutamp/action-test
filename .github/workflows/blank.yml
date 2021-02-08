@@ -23,7 +23,7 @@ jobs:
       run: docker push ${{ env.CONTAINER_IMAGE }}:${GITHUB_SHA::7}
 
     - name: Cloning Receiver Repo
-      run: git clone "https://${{ secrets.ACCESS_TOKEN }}@github.com/deepakjotwani/receiver.git"
+      run: git clone "https://${{ secrets.ACCESS_TOKEN }}@github.com/goutamp/receiver.git"
 
     - name: Importing the GPG key
       run: |
