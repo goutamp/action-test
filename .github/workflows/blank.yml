@@ -1,5 +1,5 @@
 ---
-name: Test-application
+name: Test-application-update
 env:
   CONTAINER_IMAGE: goutamp/action-test
 on:
