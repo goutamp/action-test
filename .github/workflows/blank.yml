@@ -1,7 +1,7 @@
 ---
 name: Test-application-update
 env:
-  CONTAINER_IMAGE: goutamp/action-test
+  CONTAINER_IMAGE: pramanick1984/test1
 on:
   push:
     branches: [main]
